@@ -111,13 +111,18 @@ export async function POST(request: Request) {
     });
 
     const choice = completion.choices[0];
-    const message = choice?.message?.content;
+    // content can be a string or array of blocks depending on the model; widen to unknown first
+    const message = choice?.message?.content as unknown;
     const rawContent =
       typeof message === 'string'
         ? message
         : Array.isArray(message)
-          ? message
-              .map((block) => ('text' in block ? block.text : ''))
+          ? (message as Array<{ text?: string }>)
+              .map((block) =>
+                block && typeof block === 'object' && 'text' in block && typeof block.text === 'string'
+                  ? block.text
+                  : '',
+              )
               .join('\n')
           : '';
 
